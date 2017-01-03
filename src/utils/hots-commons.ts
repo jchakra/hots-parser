@@ -18,6 +18,6 @@ export interface Build {
 
 export interface Hero {
   name: string;
-  role: Array<HeroRoles>;
+  roles: Array<HeroRoles>;
   builds: Array<Build>;
 }

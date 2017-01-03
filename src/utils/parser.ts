@@ -1,15 +1,15 @@
-import * as axios from 'axios';
+import defaultAxios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
 
-interface Parser {
+export interface Parser {
   getNodesTexts(selector: string): Promise<Array<string>>;
 }
 
-export function createParser(url: string): Parser {
+export function createParser(url: string, axios: AxiosInstance = defaultAxios): Parser {
   let $;
   const html: Promise<CheerioStatic> = Promise.resolve() // ensure errors are .catch'ed instead of throwing
     .then(() => axios.get(url))
-    .then(({ data }) => cheerio.load('' + data))
+    .then(({ data }) => cheerio.load(data))
     .then($html => $ = $html);
 
   return {
