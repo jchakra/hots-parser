@@ -22,7 +22,8 @@ export function parseHeroesListFromIcyVeins(axios: any = defaultAxios): Promise<
         heroesList[index].roles = heroesList[index].roles.concat(hero.roles);
       }
       return heroesList;
-    }, []));
+    }, []))
+    .catch(() => Promise.reject('Heroes list parsing from Icy-Veins failed'));
 }
 
 function getHeroesListFromIcyVeinsCategory(parser: Parser, category: string): Promise<Array<Hero>> {
@@ -57,7 +58,8 @@ export function getHeroesListFromHotsLogs(axios: any = defaultAxios): Promise<Ar
         roles: [ getRoleFromHotsLogsGroup(heroData.Group) ],
         builds: []
       })
-    ));
+    ))
+    .catch(() => Promise.reject('Heroes list fetching from HotsLogs API failed'));
 }
 
 function getRoleFromHotsLogsGroup(group: string): HeroRoles {
@@ -75,10 +77,22 @@ function getRoleFromHotsLogsGroup(group: string): HeroRoles {
 }
 
 export function getFullHeroesList(axios: any = defaultAxios): Promise<Array<Hero>> {
-  return Promise.all([
+  const sources = [
     parseHeroesListFromIcyVeins(axios),
     getHeroesListFromHotsLogs(axios)
-  ])
+  ];
+  let failureCounter = 0;
+
+  return Promise.all(sources
+      .map(promise => promise.catch(() => {
+        failureCounter += 1;
+        return [];
+      }))
+    )
+    .then(heroesLists => {
+      if (failureCounter === sources.length) return Promise.reject('Something went terribly wrong, could not get full heroes list');
+      return heroesLists;
+    })
     .then(flatten)
     .then(heroesList => uniqBy(heroesList, 'name'))
     .then(heroesList => sortBy(heroesList, 'name'));

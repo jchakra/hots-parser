@@ -1,7 +1,7 @@
 import { parseHeroesListFromIcyVeins, getHeroesListFromHotsLogs, getFullHeroesList } from '../../src/heroes';
 import { createAxiosMock } from '../utils';
 import { readFileSync } from 'fs';
-import { deepEqual as assertDeepEqual } from 'assert';
+import { deepEqual as assertDeepEqual, ok } from 'assert';
 import { HeroRoles } from '../../src/utils/hots-commons';
 
 describe('src/heores/index.ts', () => {
@@ -84,6 +84,25 @@ describe('src/heores/index.ts', () => {
             { name: 'Varian', roles: [ HeroRoles.Warrior, HeroRoles.Assassin ], builds: [] },
           ]);
         });
+
+    });
+
+    it('can handle failed HTTP request', () => {
+
+      const axios = createAxiosMock({
+        'GET http://www.icy-veins.com/heroes/': {
+          status: 500,
+          response: ''
+        }
+      });
+
+      return Promise.resolve()
+        .then(() => parseHeroesListFromIcyVeins(axios))
+        .then(
+          () => Promise.reject('Failing request did not reject'),
+          e => ok(/parsing.*failed/.test(e)) // helpful error message
+        );
+
     });
 
   });
@@ -114,6 +133,24 @@ describe('src/heores/index.ts', () => {
             { name: 'Murky', roles: [ HeroRoles.Specialist ], builds: [] }
           ]);
         });
+
+    });
+
+    it('can handle failed HTTP request', () => {
+
+      const axios = createAxiosMock({
+        'GET https://api.hotslogs.com/Public/Data/Heroes': {
+          status: 500,
+          response: []
+        }
+      });
+
+      return Promise.resolve()
+        .then(() => getHeroesListFromHotsLogs(axios))
+        .then(
+          () => Promise.reject('Failing request did not reject'),
+          e => ok(/fetching.*failed/.test(e)) // helpful error message
+        );
 
     });
 
@@ -176,6 +213,76 @@ describe('src/heores/index.ts', () => {
             { name: 'Valla', roles: [ HeroRoles.Assassin ], builds: [] }
           ]);
         });
+
+    });
+
+    it('keeps working if only one source failed', () => {
+
+      return Promise.resolve()
+        .then(() => {
+          const axios = createAxiosMock({
+            'GET https://api.hotslogs.com/Public/Data/Heroes': {
+              status: 500,
+              response: []
+            },
+            'GET http://www.icy-veins.com/heroes/': {
+              status: 200,
+              response: `
+                <div id="nav_specialists">
+                  <div class="nav_content_block_entry_heroes_hero">
+                    <a><span>Murky</span></a>
+                  </div>
+                </div>
+                `
+            }
+          });
+          return getFullHeroesList(axios);
+        })
+        .then(heroesList => {
+          assertDeepEqual(heroesList, [
+            { name: 'Murky', roles: [ HeroRoles.Specialist ], builds: [] }
+          ]);
+        })
+        .then(() => {
+          const axios = createAxiosMock({
+            'GET https://api.hotslogs.com/Public/Data/Heroes': {
+              status: 200,
+              response: [ { PrimaryName: 'Murky', Group: 'Specialist' } ]
+            },
+            'GET http://www.icy-veins.com/heroes/': {
+              status: 500,
+              response: ''
+            }
+          });
+          return getFullHeroesList(axios);
+        })
+        .then(heroesList => {
+          assertDeepEqual(heroesList, [
+            { name: 'Murky', roles: [ HeroRoles.Specialist ], builds: [] }
+          ]);
+        });
+
+    });
+
+    it('fails if all sources failed', () => {
+
+      const axios = createAxiosMock({
+        'GET https://api.hotslogs.com/Public/Data/Heroes': {
+          status: 500,
+          response: []
+        },
+        'GET http://www.icy-veins.com/heroes/': {
+          status: 500,
+          response: ''
+        }
+      });
+
+      return Promise.resolve()
+        .then(() => getFullHeroesList(axios))
+        .then(
+          () => Promise.reject('All sources failing did not reject'),
+          e => ok(/wrong.*could not/.test(e)) // helpful error message
+        );
 
     });
 
