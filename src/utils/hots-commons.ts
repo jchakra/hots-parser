@@ -5,19 +5,19 @@ export enum HeroRoles {
   Support
 }
 
-export interface Skill{
+export interface Skill {
   name: string;
   level: number;
   description: string;
 }
 
-export interface Build{
+export interface Build {
   name: string;
   skills: Array<Skill>;
 }
 
-export interface Hero{
+export interface Hero {
   name: string;
   role: HeroRoles|Array<HeroRoles>;
-  builds: Array<Build>
+  builds: Array<Build>;
 }
