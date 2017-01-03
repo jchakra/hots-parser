@@ -1,5 +1,5 @@
 import { createParser, Parser } from '../utils/parser';
-import { flatten, uniqBy, sortBy } from 'lodash';
+import { flatten, uniqBy, sortBy, findIndex } from 'lodash';
 import defaultAxios from 'axios';
 import { Hero, HeroRoles } from '../utils/hots-commons';
 
@@ -12,7 +12,17 @@ export function parseHeroesListFromIcyVeins(axios: any = defaultAxios): Promise<
     getHeroesListFromIcyVeinsCategory(parser, 'support'),
     getHeroesListFromIcyVeinsCategory(parser, 'specialists'),
   ])
-    .then(flatten);
+    .then(flatten)
+    .then(heroesList => heroesList.reduce((heroesList: Array<Hero>, hero) => {
+      const index = findIndex(heroesList, ({ name }) => name === hero.name);
+      if (index === -1) {
+        heroesList.push(hero);
+      } else {
+        heroesList[index].builds = heroesList[index].builds.concat(hero.builds);
+        heroesList[index].roles = heroesList[index].roles.concat(hero.roles);
+      }
+      return heroesList;
+    }, []));
 }
 
 function getHeroesListFromIcyVeinsCategory(parser: Parser, category: string): Promise<Array<Hero>> {
