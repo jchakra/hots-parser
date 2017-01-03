@@ -22,3 +22,9 @@ function getHeroesListFromIcyVeinsCategory(parser: Parser, category: string): Pr
   return parser.getNodesTexts(`#nav_${category} .nav_content_block_entry_heroes_hero a span:nth-of-type(1)`)
     .then(heroesNames => heroesNames.map(heroName => ({ name: heroName })));
 }
+
+export function getHeroesListFromHotsLogs(axios: any = defaultAxios): Promise<Array<Hero>> {
+  return Promise.resolve()
+    .then(() => axios.get('https://api.hotslogs.com/Public/Data/Heroes'))
+    .then(({ data }: { data: Array<{PrimaryName: string}> }) => data.map(heroData => ({ name: heroData.PrimaryName })));
+}

@@ -1,4 +1,4 @@
-import { parseHeroesListFromIcyVeins } from '../../src/heroes';
+import { parseHeroesListFromIcyVeins, getHeroesListFromHotsLogs } from '../../src/heroes';
 import { createAxiosMock } from '../utils';
 import { readFileSync } from 'fs';
 import { deepEqual as assertDeepEqual } from 'assert';
@@ -49,6 +49,37 @@ describe('src/heores/index.ts', () => {
             { name: 'Valla' },
             { name: 'Li Li' },
             { name: 'Uther' },
+            { name: 'Murky' }
+          ]);
+        });
+
+    });
+
+  });
+
+  describe('getHeroesListFromHotsLogs', () => {
+
+    it('can get the heroes list from HotsLogs API', () => {
+
+      const axios = createAxiosMock({
+        'GET https://api.hotslogs.com/Public/Data/Heroes': {
+          status: 200,
+          response: [
+            { PrimaryName: 'Diablo' },
+            { PrimaryName: 'Li Li' },
+            { PrimaryName: 'Valla' },
+            { PrimaryName: 'Murky' }
+          ]
+        }
+      });
+
+      return Promise.resolve()
+        .then(() => getHeroesListFromHotsLogs(axios))
+        .then(heroesList => {
+          assertDeepEqual(heroesList, [
+            { name: 'Diablo' },
+            { name: 'Li Li' },
+            { name: 'Valla' },
             { name: 'Murky' }
           ]);
         });
