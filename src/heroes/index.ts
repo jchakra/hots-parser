@@ -1,5 +1,5 @@
 import { createParser, Parser } from '../utils/parser';
-import { flatten } from 'lodash';
+import { flatten, uniqBy, sortBy } from 'lodash';
 import defaultAxios from 'axios';
 
 interface Hero {
@@ -27,4 +27,14 @@ export function getHeroesListFromHotsLogs(axios: any = defaultAxios): Promise<Ar
   return Promise.resolve()
     .then(() => axios.get('https://api.hotslogs.com/Public/Data/Heroes'))
     .then(({ data }: { data: Array<{PrimaryName: string}> }) => data.map(heroData => ({ name: heroData.PrimaryName })));
+}
+
+export function getFullHeroesList(axios: any = defaultAxios): Promise<Array<Hero>> {
+  return Promise.all([
+    parseHeroesListFromIcyVeins(axios),
+    getHeroesListFromHotsLogs(axios)
+  ])
+    .then(flatten)
+    .then(heroesList => uniqBy(heroesList, 'name'))
+    .then(heroesList => sortBy(heroesList, 'name'));
 }
